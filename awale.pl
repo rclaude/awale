@@ -15,8 +15,8 @@ tour(humain).
 
 % OUTILS
 
-miseAjour(Joueur,Plateau):- retract(jeu(Joueur,_)),assert(jeu(Joueur,Plateau)).
-
+miseAjourPlateau(Joueur,Plateau):- retract(jeu(Joueur,_)),assert(jeu(Joueur,Plateau)).
+miseAjourScore(Joueur,Score):- retract(score(Joueur,_)),assert(score(Joueur,Score)).
 													
 
 
@@ -28,18 +28,17 @@ tour(Joueur1,Joueur2,CasePriseGraines,GrainesRamassees) :- jeu(Joueur1,Plateau),
                                                         case(CasePriseGraines,Plateau,NbGrDistrib),
                                                         NbGrDistrib\==0,
                                                         distribPlateau(0,CasePriseGraines,NbGrDistrib,Plateau,NewPlateau,CaseArrivee,NbGrainesResttes),
-                                                        miseAjour(Joueur1,NewPlateau),
+                                                        miseAjourPlateau(Joueur1,NewPlateau),
                                                         NbGrainesResttes\==0,
                                                         distribPlateauJ2(Joueur2,Joueur1,NbGrainesResttes,CaseA,Plat2,Ja),
                                                         CasePr is 1-CaseA,
-                                                        write(CasePr),
                                                         ramasserGraines(Joueur1,Ja,CasePr,GrainesRamassees).
 
 % distribution des graines restantes après le premier passage de "prise"
 distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :- 
 											jeu(Joueur2,Plateau2),
 											distribPlateau(1,1,NbGraines,Plateau2,NewPlateau2,CaseArr,NbGrainesReste),
-											miseAjour(Joueur2,NewPlateau2),
+											miseAjourPlateau(Joueur2,NewPlateau2),
 											ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr1,Plat,JoueurArr),
 											ifThenCaseArrivee(CaseArr,CaseArr1,CaseArrivee).
                                             
@@ -67,10 +66,10 @@ ramasserGraines(Joueur1,Joueur1,CaseDepart,_):- !.
 ramasserGraines(Joueur1,Joueur2,CaseDepart,GrainesRamassees):- jeu(Joueur2,Plateau),
                                                                permut(Plateau,PlateauInverse),
                                                                CaseDep is 7-CaseDepart, 
-                                                               nl,write(CaseDep),nl,
                                                                recuperationGraines(PlateauInverse, CaseDep, NewPlateauInvers, GrainesRamassees),
                                                                permut(NewPlateauInvers,NewPlateau),
-                                                               miseAjour(Joueur2,NewPlateau).
+                                                               miseAjourPlateau(Joueur2,NewPlateau),
+                                                               miseAjourScore(Joueur1,GrainesRamassees).
 
                                                                
 recuperationGraines([], CaseCourante, [], 0):- !.
@@ -162,26 +161,29 @@ testDistribPlateau(Plateau,NewPlateau,CA,NBR):- distribPlateau(1,1,15,Plateau,Ne
 testDistPlat2(CaseArr,PlateauJ2) :- distribPlateauJ2('ordi','humain',11,CaseArr,PlateauJ2,J).
 
 % test ramasseesGraines 
-testRamasse(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J). 
-testRamasse2(NbG,J):- miseAjour('ordi',[2,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
+testRamasse(NbG,J):- miseAjourPlateau('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J). 
+testRamasse2(NbG,J):- miseAjourPlateau('ordi',[2,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
 
 % test d'un tour de jeu : prise et distribution de graines.
-testTour(A,B) :- miseAjour('ordi',[1,4,2,1,4,4]),
-                 miseAjour('humain',[4,4,4,4,4,4]),
+testTour(A,B) :- miseAjourPlateau('ordi',[1,4,2,1,4,4]),
+                 miseAjourPlateau('humain',[4,4,4,4,4,4]),
                  tour('humain','ordi',6,Nbr),
                  jeu('humain',A),
                  jeu('ordi',B).
 
 % test d'un enchainement de 2 tours de jeu
-test2Tour(A,B) :-miseAjour('ordi',[1,4,2,1,6,4]),
-                     miseAjour('humain',[4,2,1,0,2,4]),
+test2Tour(A,B,C,D) :-miseAjourPlateau('humain',[4,2,1,0,2,4]),
+                     miseAjourPlateau('ordi',[1,4,2,1,6,4]),
+                     miseAjourScore('humain',0),
+                     miseAjourScore('ordi',0),
                      tour('humain','ordi',6,NbrH),
                      tour('ordi','humain',5,NbrO),
                      jeu('humain',A),
-                     jeu('ordi',B).	
+                     jeu('ordi',B),
+                     score('humain',C),
+                     score('ordi',D).	
 
 % test de validation du jeu
-
 testValidation():- testDistribPlateau([4,4,4,4,4,4],NewPlateau,CA,NBR),
                   !.
                    
