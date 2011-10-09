@@ -46,34 +46,41 @@ permut([T|Q],NouvListe) :- permut(Q,R), append(R,[T],NouvListe).
 
 ramasserGraines(Joueur1,Joueur1,CaseDepart,_):- !.
 ramasserGraines(Joueur1,Joueur2,CaseDepart,GrainesRamassees):- jeu(Joueur2,Plateau),
-                                                               permut(Plateau,PlateauInv),
+                                                               permut(Plateau,PlateauInverse),
                                                                CaseDep is 7-CaseDepart, % (6-CaseDep + 1 vu que nos indices commencent à 1)
                                                                recuperationGraines(PlateauInverse, CaseDep, NewPlateauInvers, GrainesRamassees),
                                                                permut(NewPlateauInvers,NewPlat),
                                                                miseAjour(Joueur2,NewPlateau).
 
-%recuperationGraines([], CaseCourante, [], 0):- !.																				  
-																				  
+                                                               
+recuperationGraines([], CaseCourante, [], 0):- !.
+						
 														   
+% dépile sans prise
 recuperationGraines([T|Q], CaseCourante, [T|N], GrainesRamassees):- CaseCourante > 1,
-																	NewCase is CaseCourante-1,
-																	recuperationGraines(Q, NewCase, N, GrainesRamassees),
-																	!.
+																	!,
+                                                                    NewCase is CaseCourante-1,
+																	recuperationGraines(Q, NewCase, N, GrainesRamassees).
 
-% des qu on a passé la case max où on peut ramasser, on renvoie le reste tel quel
-recuperationGraines([T|Q], CaseCourante, [T|Q], 0):- CaseCourante <1;CaseCourante ==1,
-													 T > 3 ; T < 2,
-													!.					
-																  
-recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):-  NewCase is CaseCourante-1,
-																				   recuperationGraines(Q, NewCase, V, AncienNbGraine),
-																				   !,
-																				   GrainesRamassees is AncienNbGraine + T.
-																					
+% le cas où rien n'est ramassé
+recuperationGraines([T|Q], 1, [T|Q], 0):- T > 3 ; T < 2 .	
 
-
-
-											
+% le cas où le joueur gagne des graines
+recuperationGraines([T|Q], 1, [0|V], GrainesRamassees):- recuperationGraines(Q, 0, V, AncienNbGraine),
+                                                         !,
+                                                         GrainesRamassees is AncienNbGraine + T.	    
+													                                                    
+recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):- CaseCourante < 1,
+                                                                    T > 1,
+                                                                    T < 4,
+                                                                    !,
+                                                                    NewCase is CaseCourante-1,
+                                                                    recuperationGraines(Q, NewCase, V, AncienNbGraine),
+                                                                    !,
+                                                                    GrainesRamassees is AncienNbGraine + T.	
+                                                                    
+recuperationGraines([T|Q], CaseCourante, [T|Q], 0):- CaseCourante < 1,
+                                                    T < 2 ; T > 3.
 
 /* --------------------------------------------------------------------------- Distribution sur un plateau */
 
@@ -150,8 +157,8 @@ testDistribPlateau(Plateau,NewPlateau,CA,NBR):- distribPlateau(1,1,15,Plateau,Ne
 testDistPlat2(CaseArr,PlateauJ2) :- distribPlateauJ2('ordi','humain',11,CaseArr,PlateauJ2,J).
 
 % test ramasseesGraines 
-testRamasse(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J).
-testRamasse2(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
+testRamasse(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J). 
+testRamasse2(NbG,J):- miseAjour('ordi',[2,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
 
 % test d'un tour de jeu : prise et distribution de graines.
 testTour(C,P,K) :- miseAjour('ordi',[4,4,4,4,4,4]),miseAjour('humain',[4,4,4,4,20,4]),tour('humain','ordi',5,C,P,K).
@@ -165,11 +172,6 @@ testJeu2Tour(NbG1,JH1,JO1) :-tour('ordi','humain',6,C1,Pl2,Ja1),
 
 % test de validation du jeu
 
-testValidation():- write('testDistribPlateau: '),                   
-                   testDistribPlateau([4,4,4,4,4,4],NewPlateau,CA,NBR),
-                   NewPlateau == [5,5,5,5,5,5],
-                   CA == -99,
-                   NBR == 9,
-                   write('OK'),nl,
-                   !.
+testValidation():- testDistribPlateau([4,4,4,4,4,4],NewPlateau,CA,NBR),
+                  !.
                    
