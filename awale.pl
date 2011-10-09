@@ -144,13 +144,14 @@ distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :-
 % TESTS
 
 % test distribution des graines avec la prise
-testDistribPlateau(Plateau,NewPlateau,CA,NBR):- jeu(humain,Plateau),distribPlateau(1,1,15,Plateau,NewPlateau,CA,NBR).
+testDistribPlateau(Plateau,NewPlateau,CA,NBR):- distribPlateau(1,1,15,Plateau,NewPlateau,CA,NBR).
 
 % test distribution des graines après le passage de "prise"
 testDistPlat2(CaseArr,PlateauJ2) :- distribPlateauJ2('ordi','humain',11,CaseArr,PlateauJ2,J).
 
 % test ramasseesGraines 
 testRamasse(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J).
+testRamasse2(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
 
 % test d'un tour de jeu : prise et distribution de graines.
 testTour(C,P,K) :- miseAjour('ordi',[4,4,4,4,4,4]),miseAjour('humain',[4,4,4,4,20,4]),tour('humain','ordi',5,C,P,K).
@@ -161,3 +162,14 @@ testJeu1Tour(NbG,JH,JO) :- miseAjour('humain',[4,4,4,4,4,4]),miseAjour('ordi',[4
 							Case2 is 1-C, ramasserGraines('humain','ordi',Case2,NbG),jeu('humain',JH),jeu('ordi',JO).
 testJeu2Tour(NbG1,JH1,JO1) :-tour('ordi','humain',6,C1,Pl2,Ja1),
 							Case3 is 1-C1, ramasserGraines('ordi','humain',Case3,NbG1),jeu('humain',JH1),jeu('ordi',JO1).		
+
+% test de validation du jeu
+
+testValidation():- write('testDistribPlateau: '),                   
+                   testDistribPlateau([4,4,4,4,4,4],NewPlateau,CA,NBR),
+                   NewPlateau == [5,5,5,5,5,5],
+                   CA == -99,
+                   NBR == 9,
+                   write('OK'),nl,
+                   !.
+                   
