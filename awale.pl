@@ -24,13 +24,32 @@ miseAjour(Joueur,Plateau):- retract(jeu(Joueur,_)),assert(jeu(Joueur,Plateau)).
 /* -------------------------------------------------------------------------------------------------- traitement d'un coup */
 
 % tour de jeu : prise et distribution des graines 
-tour(Joueur1,Joueur2,CasePriseGraines,CaseA,Plat2,Ja) :- jeu(Joueur1,Plateau),
-								case(CasePriseGraines,Plateau,NbGrDistrib),
-								NbGrDistrib\==0,
-								distribPlateau(0,CasePriseGraines,NbGrDistrib,Plateau,NewPlateau,CaseArrivee,NbGrainesResttes),
-								miseAjour(Joueur1,NewPlateau),
-								NbGrainesResttes\==0,
-								distribPlateauJ2(Joueur2,Joueur1,NbGrainesResttes,CaseA,Plat2,Ja).
+tour(Joueur1,Joueur2,CasePriseGraines,GrainesRamassees) :- jeu(Joueur1,Plateau),
+                                                        case(CasePriseGraines,Plateau,NbGrDistrib),
+                                                        NbGrDistrib\==0,
+                                                        distribPlateau(0,CasePriseGraines,NbGrDistrib,Plateau,NewPlateau,CaseArrivee,NbGrainesResttes),
+                                                        miseAjour(Joueur1,NewPlateau),
+                                                        NbGrainesResttes\==0,
+                                                        distribPlateauJ2(Joueur2,Joueur1,NbGrainesResttes,CaseA,Plat2,Ja),
+                                                        CasePr is 1-CaseA,
+                                                        write(CasePr),
+                                                        ramasserGraines(Joueur1,Ja,CasePr,GrainesRamassees).
+
+% distribution des graines restantes après le premier passage de "prise"
+distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :- 
+											jeu(Joueur2,Plateau2),
+											distribPlateau(1,1,NbGraines,Plateau2,NewPlateau2,CaseArr,NbGrainesReste),
+											miseAjour(Joueur2,NewPlateau2),
+											ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr1,Plat,JoueurArr),
+											ifThenCaseArrivee(CaseArr,CaseArr1,CaseArrivee).
+                                            
+% outils conditionnels
+ifThenContinueDistribPlat2(J1,J2,0,Case,_,J2):- !.
+ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja):- NbGrainesReste\==0,
+																			distribPlateauJ2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja).
+
+ifThenCaseArrivee(Case1,Case2,CaseFin):- nonvar(Case2),!,CaseFin is Case2.
+ifThenCaseArrivee(Case1,Case2,CaseFin):- CaseFin is Case1,!.
 
 % Nombre de graines dans la case choisie
 case(Case,Joueur,[T|Q],NbGraines):- jeu(Joueur,[T|Q]),case(Case,[T|Q],NbGraines).
@@ -47,14 +66,14 @@ permut([T|Q],NouvListe) :- permut(Q,R), append(R,[T],NouvListe).
 ramasserGraines(Joueur1,Joueur1,CaseDepart,_):- !.
 ramasserGraines(Joueur1,Joueur2,CaseDepart,GrainesRamassees):- jeu(Joueur2,Plateau),
                                                                permut(Plateau,PlateauInverse),
-                                                               CaseDep is 7-CaseDepart, % (6-CaseDep + 1 vu que nos indices commencent à 1)
+                                                               CaseDep is 7-CaseDepart, 
+                                                               nl,write(CaseDep),nl,
                                                                recuperationGraines(PlateauInverse, CaseDep, NewPlateauInvers, GrainesRamassees),
-                                                               permut(NewPlateauInvers,NewPlat),
+                                                               permut(NewPlateauInvers,NewPlateau),
                                                                miseAjour(Joueur2,NewPlateau).
 
                                                                
 recuperationGraines([], CaseCourante, [], 0):- !.
-						
 														   
 % dépile sans prise
 recuperationGraines([T|Q], CaseCourante, [T|N], GrainesRamassees):- CaseCourante > 1,
@@ -80,7 +99,7 @@ recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):- CaseCourante
                                                                     GrainesRamassees is AncienNbGraine + T.	
                                                                     
 recuperationGraines([T|Q], CaseCourante, [T|Q], 0):- CaseCourante < 1,
-                                                    T < 2 ; T > 3.
+                                                    T < 2 ; T > 3 .
 
 /* --------------------------------------------------------------------------- Distribution sur un plateau */
 
@@ -107,12 +126,6 @@ ifThenListe(Prise,Compte,T):- Compte is T+1.
 ifThenGraines(Prise,NbGr,NbGrD):- Prise==0,!,NbGr is NbGrD.
 ifThenGraines(Prise,NbGr,NbGrD):- NbGr is NbGrD-1.
 
-ifThenContinueDistribPlat2(J1,J2,0,Case,_,J2):- !.
-ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja):- NbGrainesReste\==0,
-																			distribPlateauJ2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja).
-
-ifThenCaseArrivee(Case1,Case2,CaseFin):- nonvar(Case2),!,CaseFin is Case2.
-ifThenCaseArrivee(Case1,Case2,CaseFin):- CaseFin is Case1,!.
 
 % DISTRIBUTION DES GRAINES
 
@@ -138,14 +151,6 @@ distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[P|M],CaseArr,NbGrRestantes):- C
 												NewNbGraine is NbGrDistrib-1,
 												distribPlateau(Prise,NewCase,NewNbGraine,Q,M,CaseArr,NbGrRestantes).
 
-% distribution des graines restantes après le premier passage de "prise"
-distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :- 
-											jeu(Joueur2,Plateau2),
-											distribPlateau(1,1,NbGraines,Plateau2,NewPlateau2,CaseArr,NbGrainesReste),
-											miseAjour(Joueur2,NewPlateau2),
-											ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr1,Plat,JoueurArr),
-											ifThenCaseArrivee(CaseArr,CaseArr1,CaseArrivee).
-                                                
 /* ----------------------------------------------------------------------------------------------------- tests  */
 
 % TESTS
@@ -161,14 +166,19 @@ testRamasse(NbG,J):- miseAjour('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','
 testRamasse2(NbG,J):- miseAjour('ordi',[2,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
 
 % test d'un tour de jeu : prise et distribution de graines.
-testTour(C,P,K) :- miseAjour('ordi',[4,4,4,4,4,4]),miseAjour('humain',[4,4,4,4,20,4]),tour('humain','ordi',5,C,P,K).
+testTour(A,B) :- miseAjour('ordi',[1,4,2,1,4,4]),
+                 miseAjour('humain',[4,4,4,4,4,4]),
+                 tour('humain','ordi',6,Nbr),
+                 jeu('humain',A),
+                 jeu('ordi',B).
 
 % test d'un enchainement de 2 tours de jeu
-testJeu1Tour(NbG,JH,JO) :- miseAjour('humain',[4,4,4,4,4,4]),miseAjour('ordi',[4,4,4,4,4,4]),tour('humain','ordi',4,C,P2,Ja),
-							%ifThenJoueur(J1,Ja,CaseArr,Case),
-							Case2 is 1-C, ramasserGraines('humain','ordi',Case2,NbG),jeu('humain',JH),jeu('ordi',JO).
-testJeu2Tour(NbG1,JH1,JO1) :-tour('ordi','humain',6,C1,Pl2,Ja1),
-							Case3 is 1-C1, ramasserGraines('ordi','humain',Case3,NbG1),jeu('humain',JH1),jeu('ordi',JO1).		
+test2Tour(A,B) :-miseAjour('ordi',[1,4,2,1,6,4]),
+                     miseAjour('humain',[4,2,1,0,2,4]),
+                     tour('humain','ordi',6,NbrH),
+                     tour('ordi','humain',5,NbrO),
+                     jeu('humain',A),
+                     jeu('ordi',B).	
 
 % test de validation du jeu
 
