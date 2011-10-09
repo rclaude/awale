@@ -19,6 +19,9 @@ miseAjourPlateau(Joueur,Plateau):- retract(jeu(Joueur,_)),assert(jeu(Joueur,Plat
 miseAjourScore(Joueur,Score):- retract(score(Joueur,_)),assert(score(Joueur,Score)).
 													
 
+/**************************************************************************************************************************
+****************************************************  Mecanique du jeu  ***************************************************
+**************************************************************************************************************************/
 
 
 /* -------------------------------------------------------------------------------------------------- traitement d'un coup */
@@ -56,7 +59,7 @@ case(Case, [T|Q], NbGraines) :- Case\==1,!,NouvCase is Case-1, case(NouvCase,Q, 
 case(1,[NbGraines|Q], NbGraines):- !.
 
 								
-/* ----------------------------------------------------------------------------- recuperer les graines gagnées */
+/* ------------------------------------------------------------------------------------- recuperer les graines gagnées */
 
 % inversion de liste
 permut([],[]):- !.
@@ -100,7 +103,7 @@ recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):- CaseCourante
 recuperationGraines([T|Q], CaseCourante, [T|Q], 0):- CaseCourante < 1,
                                                     T < 2 ; T > 3 .
 
-/* --------------------------------------------------------------------------- Distribution sur un plateau */
+/* ------------------------------------------------------------------------------- Distribution sur un plateau */
 
 /*
 Conditions d'arret:
@@ -184,6 +187,23 @@ test2Tour(A,B,C,D) :-miseAjourPlateau('humain',[4,2,1,0,2,4]),
                      score('ordi',D).	
 
 % test de validation du jeu
-testValidation():- testDistribPlateau([4,4,4,4,4,4],NewPlateau,CA,NBR),
-                  !.
+testValidation:- miseAjourPlateau('humain',[4,2,1,0,2,4]),
+                 miseAjourPlateau('ordi',[1,4,2,1,6,4]),
+                 miseAjourScore('humain',0),
+                 miseAjourScore('ordi',0),
+                 tour('humain','ordi',6,NbrH),
+                 tour('ordi','humain',5,NbrO),
+                 jeu('humain',A),
+                 jeu('ordi',B),
+                 score('humain',C),
+                 score('ordi',D),
+                 A == [5,3,2,1,0,0],
+                 B == [2,5,0,0,0,5],
+                 C == 5,
+                 D == 3 .
+                 
                    
+/**************************************************************************************************************************
+********************************************  IA (algo => alpha beta negamax)  ********************************************
+**************************************************************************************************************************/
+
