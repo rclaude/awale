@@ -17,16 +17,16 @@ tour(humain).
 
 miseAjourPlateau(Joueur,Plateau):- retract(jeu(Joueur,_)),assert(jeu(Joueur,Plateau)).
 miseAjourScore(Joueur,Score):- retract(score(Joueur,_)),assert(score(Joueur,Score)).
-													
+
 
 /**************************************************************************************************************************
-****************************************************  Mecanique du jeu  ***************************************************
+**************************************************** Mecanique du jeu ***************************************************
 **************************************************************************************************************************/
 
 
 /* -------------------------------------------------------------------------------------------------- traitement d'un coup */
 
-% tour de jeu : prise et distribution des graines 
+% tour de jeu : prise et distribution des graines. Fail si il n'y a pas de graines à distribuer
 tour(Joueur1,Joueur2,CasePriseGraines,GrainesRamassees) :- jeu(Joueur1,Plateau),
                                                         case(CasePriseGraines,Plateau,NbGrDistrib),
                                                         NbGrDistrib\==0,
@@ -38,17 +38,17 @@ tour(Joueur1,Joueur2,CasePriseGraines,GrainesRamassees) :- jeu(Joueur1,Plateau),
                                                         ramasserGraines(Joueur1,Ja,CasePr,GrainesRamassees).
 
 % distribution des graines restantes après le premier passage de "prise"
-distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :- 
-											jeu(Joueur2,Plateau2),
-											distribPlateau(1,1,NbGraines,Plateau2,NewPlateau2,CaseArr,NbGrainesReste),
-											miseAjourPlateau(Joueur2,NewPlateau2),
-											ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr1,Plat,JoueurArr),
-											ifThenCaseArrivee(CaseArr,CaseArr1,CaseArrivee).
+distribPlateauJ2(Joueur2,Joueur1,NbGraines,CaseArrivee,NewPlateau2,JoueurArr) :-
+jeu(Joueur2,Plateau2),
+distribPlateau(1,1,NbGraines,Plateau2,NewPlateau2,CaseArr,NbGrainesReste),
+miseAjourPlateau(Joueur2,NewPlateau2),
+ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr1,Plat,JoueurArr),
+ifThenCaseArrivee(CaseArr,CaseArr1,CaseArrivee).
                                             
 % outils conditionnels
 ifThenContinueDistribPlat2(J1,J2,0,Case,_,J2):- !.
 ifThenContinueDistribPlat2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja):- NbGrainesReste\==0,
-																			distribPlateauJ2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja).
+distribPlateauJ2(Joueur1,Joueur2,NbGrainesReste,CaseArr,Plat,Ja).
 
 ifThenCaseArrivee(Case1,Case2,CaseFin):- nonvar(Case2),!,CaseFin is Case2.
 ifThenCaseArrivee(Case1,Case2,CaseFin):- CaseFin is Case1,!.
@@ -58,7 +58,7 @@ case(Case,Joueur,[T|Q],NbGraines):- jeu(Joueur,[T|Q]),case(Case,[T|Q],NbGraines)
 case(Case, [T|Q], NbGraines) :- Case\==1,!,NouvCase is Case-1, case(NouvCase,Q, NbGraines).
 case(1,[NbGraines|Q], NbGraines):- !.
 
-								
+
 /* ------------------------------------------------------------------------------------- recuperer les graines gagnées */
 
 % inversion de liste
@@ -68,7 +68,7 @@ permut([T|Q],NouvListe) :- permut(Q,R), append(R,[T],NouvListe).
 ramasserGraines(Joueur1,Joueur1,CaseDepart,_):- !.
 ramasserGraines(Joueur1,Joueur2,CaseDepart,GrainesRamassees):- jeu(Joueur2,Plateau),
                                                                permut(Plateau,PlateauInverse),
-                                                               CaseDep is 7-CaseDepart, 
+                                                               CaseDep is 7-CaseDepart,
                                                                recuperationGraines(PlateauInverse, CaseDep, NewPlateauInvers, GrainesRamassees),
                                                                permut(NewPlateauInvers,NewPlateau),
                                                                miseAjourPlateau(Joueur2,NewPlateau),
@@ -76,21 +76,21 @@ ramasserGraines(Joueur1,Joueur2,CaseDepart,GrainesRamassees):- jeu(Joueur2,Plate
 
                                                                
 recuperationGraines([], CaseCourante, [], 0):- !.
-														   
+
 % dépile sans prise
 recuperationGraines([T|Q], CaseCourante, [T|N], GrainesRamassees):- CaseCourante > 1,
-																	!,
+!,
                                                                     NewCase is CaseCourante-1,
-																	recuperationGraines(Q, NewCase, N, GrainesRamassees).
+recuperationGraines(Q, NewCase, N, GrainesRamassees).
 
 % le cas où rien n'est ramassé
-recuperationGraines([T|Q], 1, [T|Q], 0):- T > 3 ; T < 2 .	
+recuperationGraines([T|Q], 1, [T|Q], 0):- T > 3 ; T < 2 .
 
 % le cas où le joueur gagne des graines
 recuperationGraines([T|Q], 1, [0|V], GrainesRamassees):- recuperationGraines(Q, 0, V, AncienNbGraine),
                                                          !,
-                                                         GrainesRamassees is AncienNbGraine + T.	    
-													                                                    
+                                                         GrainesRamassees is AncienNbGraine + T.
+
 recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):- CaseCourante < 1,
                                                                     T > 1,
                                                                     T < 4,
@@ -98,7 +98,7 @@ recuperationGraines([T|Q], CaseCourante, [0|V], GrainesRamassees):- CaseCourante
                                                                     NewCase is CaseCourante-1,
                                                                     recuperationGraines(Q, NewCase, V, AncienNbGraine),
                                                                     !,
-                                                                    GrainesRamassees is AncienNbGraine + T.	
+                                                                    GrainesRamassees is AncienNbGraine + T.
                                                                     
 recuperationGraines([T|Q], CaseCourante, [T|Q], 0):- CaseCourante < 1,
                                                     T < 2 ; T > 3 .
@@ -120,7 +120,7 @@ distribPlateau(Prise,CaseCrte,NbGrDistrib,Plateau,Plateau,CaseA,NbGrR):-NbGrDist
 distribPlateau(Prise,CaseCrte,NbGrDistrib,[],[],CaseA,NbGrR):-CaseA is -99,NbGrR is NbGrDistrib,!.
 
 
-% Outils conditionnels 
+% Outils conditionnels
 
 ifThenListe(Prise,Compte,T):- Prise==0,!,Compte is 0.
 ifThenListe(Prise,Compte,T):- Compte is T+1.
@@ -133,27 +133,27 @@ ifThenGraines(Prise,NbGr,NbGrD):- NbGr is NbGrD-1.
 
 % Copie des cases du plateau courant non affectées par la distribution dans le nouveau plateau
 distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[T|M],CaseArr,NbGrRestantes):- CaseCrte>1,
-												 !,
-												 NewCase is CaseCrte-1,
-												 distribPlateau(Prise,NewCase,NbGrDistrib,Q,M,CaseArr,NbGrRestantes).
-												 
-% Prise des graines dans la case demandée (elle ne contiendra plus rien dans le nouveau plateau)											 
-distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[N|M],CaseArr,NbGrRestantes):- CaseCrte==1,
-												 !,
-												 ifThenListe(Prise,N,T),
-												 ifThenGraines(Prise,NbGr,NbGrDistrib),
-												 NewCase is CaseCrte-1,												
-												 distribPlateau(Prise,NewCase,NbGr,Q,M,CaseArr,NbGrRestantes).	
-											
-% Ajout d'une graine par case pour les cases qui suivent celle d'où les graines ont été prises (sens anti-horaire)												 
-distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[P|M],CaseArr,NbGrRestantes):- CaseCrte<1,
-												!,
-												P is T+1,
-												NewCase is CaseCrte-1,
-												NewNbGraine is NbGrDistrib-1,
-												distribPlateau(Prise,NewCase,NewNbGraine,Q,M,CaseArr,NbGrRestantes).
+!,
+NewCase is CaseCrte-1,
+distribPlateau(Prise,NewCase,NbGrDistrib,Q,M,CaseArr,NbGrRestantes).
 
-/* ----------------------------------------------------------------------------------------------------- tests  */
+% Prise des graines dans la case demandée (elle ne contiendra plus rien dans le nouveau plateau)
+distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[N|M],CaseArr,NbGrRestantes):- CaseCrte==1,
+!,
+ifThenListe(Prise,N,T),
+ifThenGraines(Prise,NbGr,NbGrDistrib),
+NewCase is CaseCrte-1,
+distribPlateau(Prise,NewCase,NbGr,Q,M,CaseArr,NbGrRestantes).
+
+% Ajout d'une graine par case pour les cases qui suivent celle d'où les graines ont été prises (sens anti-horaire)
+distribPlateau(Prise,CaseCrte,NbGrDistrib,[T|Q],[P|M],CaseArr,NbGrRestantes):- CaseCrte<1,
+!,
+P is T+1,
+NewCase is CaseCrte-1,
+NewNbGraine is NbGrDistrib-1,
+distribPlateau(Prise,NewCase,NewNbGraine,Q,M,CaseArr,NbGrRestantes).
+
+/* ----------------------------------------------------------------------------------------------------- tests */
 
 % TESTS
 
@@ -163,8 +163,8 @@ testDistribPlateau(Plateau,NewPlateau,CA,NBR):- distribPlateau(1,1,15,Plateau,Ne
 % test distribution des graines après le passage de "prise"
 testDistPlat2(CaseArr,PlateauJ2) :- distribPlateauJ2('ordi','humain',11,CaseArr,PlateauJ2,J).
 
-% test ramasseesGraines 
-testRamasse(NbG,J):- miseAjourPlateau('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J). 
+% test ramasseesGraines
+testRamasse(NbG,J):- miseAjourPlateau('ordi',[6,1,3,3,2,8]), ramasserGraines('humain','ordi',4,NbG),jeu('ordi',J).
 testRamasse2(NbG,J):- miseAjourPlateau('ordi',[2,1,3,3,2,8]), ramasserGraines('humain','ordi',1,NbG),jeu('ordi',J).
 
 % test d'un tour de jeu : prise et distribution de graines.
@@ -179,12 +179,12 @@ test2Tour(A,B,C,D) :-miseAjourPlateau('humain',[4,2,1,0,2,4]),
                      miseAjourPlateau('ordi',[1,4,2,1,6,4]),
                      miseAjourScore('humain',0),
                      miseAjourScore('ordi',0),
-                     tour('humain','ordi',6,NbrH),
+                     tour('humain','ordi',4,NbrH),
                      tour('ordi','humain',5,NbrO),
                      jeu('humain',A),
                      jeu('ordi',B),
                      score('humain',C),
-                     score('ordi',D).	
+                     score('ordi',D).
 
 % test de validation du jeu
 testValidation:- miseAjourPlateau('humain',[4,2,1,0,2,4]),
@@ -204,6 +204,95 @@ testValidation:- miseAjourPlateau('humain',[4,2,1,0,2,4]),
                  
                    
 /**************************************************************************************************************************
-********************************************  IA (algo => alpha beta negamax)  ********************************************
+******************************************** IA (algo => alpha beta negamax) ********************************************
 **************************************************************************************************************************/
 
+/* ----------------------------------------------------------------------------------------------- min max notre arbre spécifique */
+
+% outils pour MinMax
+
+% itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, NouvValMax, NouvCaseMax)
+itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, Tete, CaseCourante):- Tete > ValMax.
+itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, ValMax, CaseMax):- !.
+
+trouverCaseMax6SuivantListe(1,[T|Q],6,T):-!.
+trouverCaseMax6SuivantListe(NbCase,[T|Q],IndiceCase, Valeur):- NouvNbCase is NbCase - 1,
+																 trouverCaseMax6SuivantListe(NouvNbCase,Q,AncienIndiceCase,AncienMax),
+																 CaseCourante is 7 - NbCase,
+																 itThenIndiceCase(T, AncienMax, AncienIndiceCase, CaseCourante, Valeur, IndiceCase).							 
+
+trouverMin6SuivantListe(0,L,L,99):-!.
+trouverMin6SuivantListe(NbCase,[T|Q],L, Valeur):- NouvNbCase is NbCase - 1,
+							                      trouverMin6SuivantListe(NouvNbCase,Q,L,AncienMin),
+												  Valeur is min(T,AncienMin).
+												  
+trouverMax6SuivantListe(0,L,L,-99):-!.
+trouverMax6SuivantListe(NbCase,[T|Q],L, Valeur):- NouvNbCase is NbCase - 1,
+							                      trouverMax6SuivantListe(NouvNbCase,Q,L,AncienMax),
+												  Valeur is max(T,AncienMax).		
+
+ifThenChoixMinMax('min','max').
+ifThenChoixMinMax('max','min').
+
+% minmax
+
+constructionEtageMinMax([],_,[]):- !.
+												  
+constructionEtageMinMax(Feuilles,'min',[T|Q]) :- trouverMin6SuivantListe(6,Feuilles,FeuillesRestantes,T),
+                                                 constructionEtageMinMax(FeuillesRestantes,'min',Q),!.
+
+constructionEtageMinMax(Feuilles,'max',[T|Q]) :- trouverMax6SuivantListe(6,Feuilles,FeuillesRestantes,T),
+												 constructionEtageMinMax(FeuillesRestantes,'max',Q),
+												 !.									
+								
+minMaxRecursif(1,Feuilles,Feuilles,_):- !.	
+								
+minMaxRecursif(NbEtages,EtageSup,Feuilles,Choix):- constructionEtageMinMax(Feuilles,Choix,Etage),
+                                                NewNbEtages is NbEtages-1,
+                                                ifThenChoixMinMax(Choix,NewChoix),
+                                                minMaxRecursif(NewNbEtages,EtageSup,Etage,NewChoix),
+                                                !.
+
+minMax(NbEtages,Feuilles,MaxF,IndiceCaseMax):- minMaxRecursif(NbEtages,DernierEtage,Feuilles,'min'),
+                                               trouverCaseMax6SuivantListe(6,DernierEtage,IndiceCaseMax,MaxF),!.
+										
+										
+% tests 
+
+generateurListe3Etages(L):- Nb is 6*6*6,
+							gene(Nb,L).
+gene(0,[]):-!.
+gene(N,[T|Q]):- NewNb is N - 1,
+				T is random(15),
+				gene(NewNb,Q).
+
+testTrouverCaseMax(IndiceCase, Valeur,L):-trouverCaseMax6SuivantListe(6,[5,2,3,1,4,6,9],L,IndiceCase, Valeur).	
+
+testConstructEtage(FeuilleEtageSup):- constructionEtageMinMax([1,2,3,6,4,5,0,2,3,7,4,5],'max',FeuilleEtageSup).
+
+testMinMaxRecursif(Etage):- generateurListe3Etages(L),
+					        minMaxRecursif(3,Etage,L,'min').
+
+doWeHaveFortyTwo(Et):- minMaxRecursif(2,Et,[1,2,3,6,4,5,0,2,3,7,4,5,1,2,3,6,4,5,0,2,3,7,4,5,1,2,3,6,4,5,0,2,3,7,4,5],'min').
+
+
+/* --------------------------------------------------------- Génération de la liste dépot de toutes les feuilles à l'horizon */
+% dernier etage, dernier coup joue
+trouverScores(Hauteur,PlatOrdi,PlatHum,ScoreDiff,Feuilles,NewFeuilles):- Hauteur==0,
+                          donnerScore(6,PlatOrdi,PlatHum,ScoreDiff,Resultats),
+                          append(Resultats,Feuilles,NewFeuilles).
+                          
+donnerScore(Nb,PlatOrdi,PlatHum,ScoreOrdi,ScoreHum,Resultat):- assert(jeu('fakeHumain',PlatHum)),
+                                                               assert(jeu('fakeOrdi',PlatOrdi)),
+                                                               assert(score('fakeHumain',ScoreHum)),
+                                                               assert(score('fakeOrdi',ScoreOrdi)),
+                                                               NbEtages is Nb -1,
+                                                               tour(Joueur1,Joueur2,1,GrainesRamassees),
+                                                               jeu('fakeHumain',PlatH),
+                                                               jeu('fakeOrdi',PlatO),
+                                                               score(Joueur1,ScoreJ),
+                                                               NewScore is ScoreJ+GrainesRamassees,                                                               
+                                                               simulation (NbEtages,                                                      
+                                                          
+                                                       .
+donnerScore(Nb,PlatOrdi,PlatHum,ScoreDiff,Resultats):- .
