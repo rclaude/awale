@@ -294,9 +294,9 @@ doWeHaveFortyTwo(Et):- minMaxRecursif(2,Et,[1,2,3,6,4,5,0,2,3,7,4,5,1,2,3,6,4,5,
 
 
 /* --------------------------------------------------------- Génération de la liste dépot de toutes les feuilles à l'horizon */
+%nouvelleEvaluation('min',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation - GrainesRamassees,!.
 
-
-nouvelleEvaluation('min',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation - GrainesRamassees,!.
+nouvelleEvaluation('min',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is GrainesRamassees - FonctionEvaluation,!.
 nouvelleEvaluation('max',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation + GrainesRamassees,!.
  
 generationListeFeuille(J1,J2,Hauteur,Feuilles):- score(J1,Score1),
@@ -326,8 +326,61 @@ simulationProfdr(Hauteur,Case,MinMax,J1,J2,P1,P2,FonctionEvaluation,Feuilles):- 
 																	simulationLargr(HauteurSvte,0,NouvMinMax,J2,J1,P2Fin,P1Fin,NouvelleValEvaluation,Feuilles),!.
  
 														
-testSimu(Hauteur,Result):- simulationLargr(Hauteur,0,'max','ordi','humain',[1,1,4,3,5,4],[2,2,7,1,3,8],0,Result).
+testSimu(Hauteur,Result):- simulationLargr(Hauteur,0,'max','ordi','humain',[1,1,5,1,0,4],[2,2,0,1,3,1],0,Result).
 
-testFinal(Hauteur,Result):- simulationLargr(Hauteur,0,'max','ordi','humain',[1,1,4,3,5,4],[2,2,7,1,3,8],0,Feuilles),!,
+testFinal(Hauteur,Choix,Result,Indice,Valeur):- simulationLargr(Hauteur,0,'max','ordi','humain',[1,1,5,1,0,4],[2,2,0,1,3,1],0,Feuilles),!,
 							flatten(Feuilles,Feuilles1),
-							minMaxRecursif(Hauteur,Result,Feuilles1,'min'),!.
+							minMaxRecursif(Hauteur,Result,Feuilles1,Choix),
+							trouverCaseMax6SuivantListe(6,Result,Indice,Valeur),!.
+/* ---------------------------------------------------------Fin génération liste feuilles*/
+
+jouer(R):- jeu('humain',Jh),
+			jeu('ordi',Jo),
+			score('humain',ScoreH), score('ordi',ScoreO),
+			write('Votre jeu : '),write(Jh),			
+			write('\nMon jeu : '),write(Jo),
+			write('\nEntrez la case dans laquelle vous désirez prendre les graines\n'),
+			read(CasePriseH),
+			tourPlat('humain','ordi',Jh,Jo,JhApresTourH,JoApresTourH,CasePriseH,GrainesRamasseesH),
+			NouvScoreH is ScoreH+GrainesRamasseesH,
+			retract(score('humain',_)),assert(score('humain',NouvScoreH)),
+			write('Votre jeu : '),
+			write(JhApresTourH),
+			write('\nMon jeu : '),
+			write(JoApresTourH),
+			FonctionEval is GrainesRamasseesH,
+			simulationLargr(1,0,'max','ordi','humain',JoApresTourH,JhApresTourH,FonctionEval,FeuillesArbreSimu),
+			flatten(FeuillesArbreSimu,FeuillesArbre),
+			minMaxRecursif(1,DernierEtage,FeuillesArbre,'max'),
+			trouverCaseMax6SuivantListe(6,DernierEtage,MeilleureCase,FonctionEvalMeilleureCase),
+			caseAjouer(MeilleureCase,JoApresTourH,DernierEtage,CasePriseO),
+			write('\nJe vais jouer '), write(CasePriseO),write('\n'),
+			tourPlat('ordi','humain',JoApresTourH,JhApresTourH,JoApresTourO,JhApresTourO,CasePriseO,GrainesRamasseesO),
+			write(GrainesRamasseesO),
+			NouvScoreO is ScoreO+GrainesRamasseesO,
+			retract(score('ordi',_)),assert(score('ordi',NouvScoreO)),
+			retract(jeu('ordi',_)),retract(jeu('humain',_)),
+			assert(jeu('ordi',JoApresTourO)),assert(jeu('humain',JhApresTourO)),
+			write('Votre jeu : '),write(JhApresTourO), write('\tVotre score : '),write(NouvScoreH),		
+			write('\nMon jeu : '),write(JoApresTourO),write('\tMon score : '),write(NouvScoreO),				
+			write('\nVoulez-vous continuer? (y/n) \n'),
+			read(Rep),
+			ifThenContinueJeu(Rep),!.
+
+caseAjouer(MeilleureCase,JoApresTourH,DernierEtage,MeilleureCase):- case(MeilleureCase, JoApresTourH, NbGraines),
+																NbGraines\==0.
+
+caseAjouer(MeilleureCase,JoApresTourH,DernierEtage,CasePriseO):- modifierDernierEtage(MeilleureCase,DernierEtage,NouvDernierEtage),
+																trouverCaseMax6SuivantListe(6,NouvDernierEtage,NouvMeilleureCase,FevalNouvMeillreC),
+																caseAjouer(NouvMeilleureCase,JoApresTourH,NouvDernierEtage,CasePriseO),!.
+																
+																
+modifierDernierEtage(CaseInvalide,[T|Q],[T|N]):- CaseInvalide > 1,
+												NouvCase is CaseInvalide-1,
+												modifierDernierEtage(NouvCase,Q,N),!.
+modifierDernierEtage(CaseInvalide,[T|Q],[-99|Q]).												
+			
+ifThenContinueJeu(Rep):- Rep=='y',!, jouer(R).
+ifThenContinueJeu(Rep):- !.
+
+testMCase(CaseAjouer):- caseAjouer(2,[1,0,5,2,0,1],[1,9,5,2,8,6],CaseAjouer).
