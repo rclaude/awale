@@ -229,7 +229,7 @@ testValidation:- miseAjourPlateau('humain',[4,2,1,0,2,4]),
 % outils pour MinMax
 
 % itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, NouvValMax, NouvCaseMax)
-itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, Tete, CaseCourante):- Tete > ValMax.
+itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, Tete, CaseCourante):- Tete > ValMax; Tete == ValMax, CaseCourante \== 0,!.
 itThenIndiceCase(Tete, ValMax, CaseMax, CaseCourante, ValMax, CaseMax):- !.
 
 trouverCaseMax6SuivantListe(1,[T|Q],6,T):-!.
@@ -297,7 +297,7 @@ doWeHaveFortyTwo(Et):- minMaxRecursif(2,Et,[1,2,3,6,4,5,0,2,3,7,4,5,1,2,3,6,4,5,
 %nouvelleEvaluation('min',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation - GrainesRamassees,!.
 
 nouvelleEvaluation('min',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is GrainesRamassees - FonctionEvaluation,!.
-nouvelleEvaluation('max',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation + GrainesRamassees,!.
+nouvelleEvaluation('max',FonctionEvaluation,GrainesRamassees,NouvelleValEvaluation):- NouvelleValEvaluation is FonctionEvaluation + GrainesRamassees,!.                             
  
 generationListeFeuille(J1,J2,Hauteur,Feuilles):- score(J1,Score1),
 								score(J2,Score2),
@@ -384,3 +384,56 @@ ifThenContinueJeu(Rep):- Rep=='y',!, jouer(R).
 ifThenContinueJeu(Rep):- !.
 
 testMCase(CaseAjouer):- caseAjouer(2,[1,0,5,2,0,1],[1,9,5,2,8,6],CaseAjouer).
+
+/**************************************************************************************************************************
+******************************************** Jeu (gestion de la partie) ********************************************
+**************************************************************************************************************************/
+
+%outil
+
+inverse([],[]). 
+inverse([X|Xs],Acc) :- 
+    inverse(Xs,Acc1), 
+    append(Acc1, [X], Acc).
+
+commencerUnePartie:- afficherPlateaux([4,4,4,4,4,4],[4,4,4,4,4,4]),
+                     tourDeJeu([4,4,4,4,4,4],[4,4,4,4,4,4],0,0).
+            
+tourDeJeu([0,0,0,0,0,0],PO,SJ,SO):- write('La partie est terminé :\n'),
+                                    afficherScore(SJ,SO),
+                                    !.            
+tourDeJeu(PJ,PO,SJ,SO):- faireJouerJoueur(PJ,PO,SJ,SO,PJInter,POInter,NouveauSJoueur),!,
+                         ifThenFinirTour(PJInter,POInter,NouveauSJoueur,SO,PJFin,POFin,NouveauSOrdi).
+
+ifThenFinirTour(PJ,[0,0,0,0,0,0],_,SO,_,_,NouveauSJoueur):- tourDeJeu([0,0,0,0,0,0],[0,0,0,0,0,0],NouveauSJoueur,SO).                         
+ifThenFinirTour(PJ,PO,SJ,SO,PJFin,POFin,NouveauSOrdi):- faireJouerOrdi(PO,PJ,SO,SJ,POFin,PJFin,NouveauSOrdi),!,
+                                                        tourDeJeu(PJFin,POFin,SJ,NouveauSOrdi). 
+  
+faireJouerJoueur(PJoueur,POrdi,SJoueur,SOrdi,PJFin,POFin,NouveauSJoueur):- write('A vous de jouer (ne pas jouer une case avec 0 graines):\n'),
+                                                                           read(CoupJoueur),                                                                           
+                                                                           tourPlat('joueur','ordi',PJoueur,POrdi,PJFin,POFin,CoupJoueur,GrainesRamassees),
+                                                                           NouveauSJoueur is SJoueur + GrainesRamassees,                                                                           
+                                                                           afficherPlateaux(PJFin,POFin).
+
+faireJouerOrdi(POrdi,PJoueur,SOrdi,SJoueur,POFin,PJFin,NouveauSOrdi):- trouverChoixOrdi(1,POrdi,PJoueur,SOrdi,SJoueur,CoupOrdi),
+                                                                       tourPlat('ordi','joueur',POrdi,PJoueur,POFin,PJFin,CoupOrdi,GrainesRamassees),
+                                                                       NouveauSOrdi is SOrdi + GrainesRamassees,
+                                                                       write('A moi de jouer :\n'),
+                                                                       afficherPlateaux(PJFin,POFin).
+                                                                           
+trouverChoixOrdi(Hauteur,POrdi,PJoueur,SOrdi,SJoueur,Choix):- EvalScore is SOrdi - SJoueur,
+                                                            simulationLargr(Hauteur,0,'max','ordi','humain',POrdi,PJoueur,EvalScore,Feuilles),!,
+                                                            flatten(Feuilles,Feuilles1),
+                                                            minMaxRecursif(Hauteur,Resultats,Feuilles1,'min'),
+                                                            trouverCaseMax6SuivantListe(6,Resultats,Choix,_).
+
+afficherPlateaux(P1,P2):- inverse(P2,NP2),
+                          write(NP2), nl,
+                          write(P1), nl.
+                          
+afficherScore(S1,S2):- write('Le score est de ')write(S1),write(' contre '),write(S2),nl.
+                          
+
+testAffichage:-afficherPlateaux([1,2,3,4,5,6],[3,4,3,2,5,0]).                          
+
+testPourNoura(IndiceCase, Valeur):- trouverCaseMax6SuivantListe(6,[0,0,0,0,0,0],IndiceCase, Valeur).
